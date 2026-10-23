@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Stylized Ribbon Letter N: Left vertical ascending loop -->
+    <path
+        android:fillColor="#FF1744"
+        android:pathData="M 32,78 C 27,78 25,72 26,62 L 31,34 C 32,25 38,20 46,20 C 52,20 56,24 54,32 L 51,46 C 49,54 44,58 39,58 C 36,58 35,56 35,52 L 38,36 C 39,32 37,30 34,31 C 32,32 31,36 31,40 L 28,64 C 27,70 29,73 32,73 C 35,73 38,70 41,64 L 68,26 C 73,19 80,18 85,24 C 88,27 88,33 86,40 L 80,68 C 78,77 72,83 63,83 C 57,83 53,79 55,71 L 58,57 C 60,49 65,45 70,45 C 73,45 74,47 74,51 L 71,67 C 70,71 72,73 75,72 C 77,71 78,67 78,63 L 83,39 C 84,33 82,30 79,29 C 76,28 73,31 70,36 L 43,74 C 39,80 35,82 32,78 Z" />
+
+    <!-- Depth accent shading along the ribbon twist -->
+    <path
+        android:fillColor="#B71C1C"
+        android:pathData="M 44,72 L 67,29 C 69,26 72,25 74,27 L 70,36 L 43,74 C 42,75 41,75 40,75 L 44,72 Z" />
+</vector>

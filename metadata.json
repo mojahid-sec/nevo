@@ -1,0 +1,6 @@
+{
+  "name": "NIVO",
+  "description": "Offline personal goal and habit tracker. One Day at a Time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

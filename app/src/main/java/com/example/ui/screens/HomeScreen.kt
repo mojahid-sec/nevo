@@ -60,6 +60,7 @@ import com.example.ui.components.NivoButton
 import com.example.ui.components.NivoLogo
 import com.example.ui.theme.CardBackground
 import com.example.ui.theme.DarkBackground
+import com.example.ui.theme.DarkRed
 import com.example.ui.theme.OutlineGrey
 import com.example.ui.theme.PrimaryRed
 import com.example.ui.theme.PrimaryText
@@ -253,80 +254,190 @@ fun HomeScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            val (autoHours, autoMinutes, autoSeconds) = viewModel.getAutomaticCountdownForGoal(goal)
+            val isAutoMode = goal.trackingMode == com.example.data.model.TrackingMode.AUTOMATIC
 
-            // 3 & 4. Circular Progress Indicator with Completed & Remaining Days
-            CircularProgressRing(
-                progressFraction = goal.progressFraction,
-                completedDays = goal.completedDaysCount,
-                remainingDays = goal.remainingDays,
-                totalDays = goal.durationDays,
-                size = 230.dp,
-                strokeWidth = 16.dp,
-                language = language
-            )
+            Spacer(modifier = Modifier.height(10.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 5. Prominent, full-width red Check In Button (Respects EXACT 24-HOUR rule)
-            if (!isEligible) {
-                NivoButton(
-                    text = NivoStrings.checkedInForToday(language),
-                    onClick = { /* Ineligible until 24 hours have passed */ },
-                    enabled = false,
-                    icon = Icons.Filled.Check,
-                    testTag = "check_in_button",
-                    containerColor = CardBackground,
-                    contentColor = SecondaryText
+            // Mode Badge
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (isAutoMode) PrimaryRed.copy(alpha = 0.12f) else OutlineGrey.copy(alpha = 0.15f))
+                    .border(1.dp, if (isAutoMode) PrimaryRed.copy(alpha = 0.5f) else OutlineGrey, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (isAutoMode) Icons.Filled.Schedule else Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = if (isAutoMode) PrimaryRed else PrimaryText,
+                    modifier = Modifier.size(13.dp)
                 )
-            } else {
-                NivoButton(
-                    text = NivoStrings.checkInButton(language),
-                    onClick = {
-                        viewModel.checkInSelectedGoal { completedGoal ->
-                            onGoalCompleted(completedGoal.id)
-                        }
-                    },
-                    enabled = true,
-                    icon = Icons.Filled.Check,
-                    testTag = "check_in_button",
-                    containerColor = PrimaryRed,
-                    contentColor = PrimaryText
+                Spacer(modifier = Modifier.width(5.dp))
+                Text(
+                    text = if (isAutoMode) NivoStrings.autoModeShort(language) else NivoStrings.manualModeShort(language),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (isAutoMode) PrimaryRed else PrimaryText
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // 6. Next Check-In Countdown (Exact 24-Hour Timer)
-            Row(
+            // EXACTLY ONE CIRCULAR PROGRESS INDICATOR PER GOAL
+            val effectiveCompleted = goal.getEffectiveCompletedDays(currentTimeMillis)
+            val effectiveRemaining = goal.getEffectiveRemainingDays(currentTimeMillis)
+            val effectiveFraction = goal.getEffectiveProgressFraction(currentTimeMillis)
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(CardBackground.copy(alpha = 0.7f))
-                    .border(1.dp, OutlineGrey.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .padding(vertical = 12.dp, horizontal = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(CardBackground)
+                    .border(1.dp, OutlineGrey, RoundedCornerShape(20.dp))
+                    .padding(vertical = 24.dp, horizontal = 16.dp)
+                    .testTag("single_goal_progress_card"),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Schedule,
-                    contentDescription = null,
-                    tint = if (!isEligible) PrimaryRed else SecondaryText,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                val countdownText = if (!isEligible) {
-                    NivoStrings.nextCheckInIn(language, hours, minutes, seconds)
-                } else {
-                    NivoStrings.checkInReady(language)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressRing(
+                        progressFraction = effectiveFraction,
+                        completedDays = effectiveCompleted,
+                        remainingDays = effectiveRemaining,
+                        totalDays = goal.durationDays,
+                        size = 220.dp,
+                        strokeWidth = 16.dp,
+                        primaryColor = PrimaryRed,
+                        secondaryColor = DarkRed,
+                        testTag = "single_goal_progress_ring",
+                        language = language
+                    )
                 }
-                Text(
-                    text = countdownText,
-                    fontSize = 12.sp,
-                    color = if (!isEligible) PrimaryText else PrimaryRed,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
-                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Action Area: Depends strictly on the Selected Tracking Mode
+            if (isAutoMode) {
+                // Automatic Tracking Mode: Progress increases automatically with elapsed time. No check-in required.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(CardBackground)
+                        .border(1.dp, OutlineGrey, RoundedCornerShape(16.dp))
+                        .padding(16.dp)
+                        .testTag("auto_tracking_info_card")
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryRed.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Schedule,
+                                    contentDescription = null,
+                                    tint = PrimaryRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = NivoStrings.autoModeShort(language),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PrimaryText
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = NivoStrings.nextAutoDayCountdown(language, autoHours, autoMinutes, autoSeconds),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = PrimaryRed
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = NivoStrings.autoModeDesc(language),
+                            fontSize = 12.sp,
+                            color = SecondaryText,
+                            lineHeight = 17.sp
+                        )
+                    }
+                }
+            } else {
+                // Manual Tracking Mode: Check-In Button (Respects EXACT 24-HOUR rule)
+                if (!isEligible) {
+                    NivoButton(
+                        text = NivoStrings.checkedInForToday(language),
+                        onClick = { /* Ineligible until 24 hours have passed */ },
+                        enabled = false,
+                        icon = Icons.Filled.Check,
+                        testTag = "check_in_button",
+                        containerColor = CardBackground,
+                        contentColor = SecondaryText
+                    )
+                } else {
+                    NivoButton(
+                        text = NivoStrings.checkInButton(language),
+                        onClick = {
+                            viewModel.checkInSelectedGoal { completedGoal ->
+                                onGoalCompleted(completedGoal.id)
+                            }
+                        },
+                        enabled = true,
+                        icon = Icons.Filled.Check,
+                        testTag = "check_in_button",
+                        containerColor = PrimaryRed,
+                        contentColor = PrimaryText
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Next Check-In Countdown (Exact 24-Hour Timer)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CardBackground.copy(alpha = 0.7f))
+                        .border(1.dp, OutlineGrey.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(vertical = 10.dp, horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Schedule,
+                        contentDescription = null,
+                        tint = if (!isEligible) PrimaryRed else SecondaryText,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    val countdownText = if (!isEligible) {
+                        NivoStrings.nextCheckInIn(language, hours, minutes, seconds)
+                    } else {
+                        NivoStrings.checkInReady(language)
+                    }
+                    Text(
+                        text = countdownText,
+                        fontSize = 12.sp,
+                        color = if (!isEligible) PrimaryText else PrimaryRed,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))

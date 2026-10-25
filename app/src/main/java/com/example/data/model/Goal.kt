@@ -2,6 +2,20 @@ package com.example.data.model
 
 import java.util.UUID
 
+enum class TrackingMode {
+    MANUAL,
+    AUTOMATIC;
+
+    companion object {
+        fun fromString(value: String?): TrackingMode {
+            return when (value?.uppercase()) {
+                "AUTOMATIC", "AUTO" -> AUTOMATIC
+                else -> MANUAL
+            }
+        }
+    }
+}
+
 data class Goal(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
@@ -12,18 +26,92 @@ data class Goal(
     val lastCheckInTimestampMillis: Long? = null,
     val isSelected: Boolean = false,
     val isCompleted: Boolean = false,
-    val completedDateMillis: Long? = null
+    val completedDateMillis: Long? = null,
+    val trackingMode: TrackingMode = TrackingMode.MANUAL
 ) {
-    val remainingDays: Int
+    // ------------------------------------------------------------------------
+    // Circle 1: Manual Progress (Increases ONLY via valid manual Check-In)
+    // ------------------------------------------------------------------------
+    val manualCompletedDays: Int
+        get() = completedDaysCount
+
+    val manualRemainingDays: Int
         get() = (durationDays - completedDaysCount).coerceAtLeast(0)
 
-    val progressFraction: Float
+    val manualProgressFraction: Float
         get() = if (durationDays > 0) {
             (completedDaysCount.toFloat() / durationDays.toFloat()).coerceIn(0f, 1f)
         } else 0f
 
+    val manualProgressPercentage: Int
+        get() = (manualProgressFraction * 100f).toInt()
+
+    // ------------------------------------------------------------------------
+    // Circle 2: Automatic Progress (Increases ONLY via elapsed 24-hour time)
+    // ------------------------------------------------------------------------
+    fun getAutomaticCompletedDays(nowMillis: Long = System.currentTimeMillis()): Int {
+        val elapsedMillis = (nowMillis - startDateMillis).coerceAtLeast(0L)
+        val full24HourDays = (elapsedMillis / EXACT_24_HOURS_MILLIS).toInt()
+        return full24HourDays.coerceIn(0, durationDays)
+    }
+
+    fun getAutomaticRemainingDays(nowMillis: Long = System.currentTimeMillis()): Int {
+        return (durationDays - getAutomaticCompletedDays(nowMillis)).coerceAtLeast(0)
+    }
+
+    fun getAutomaticProgressFraction(nowMillis: Long = System.currentTimeMillis()): Float {
+        return if (durationDays > 0) {
+            (getAutomaticCompletedDays(nowMillis).toFloat() / durationDays.toFloat()).coerceIn(0f, 1f)
+        } else 0f
+    }
+
+    fun getAutomaticProgressPercentage(nowMillis: Long = System.currentTimeMillis()): Int {
+        return (getAutomaticProgressFraction(nowMillis) * 100f).toInt()
+    }
+
+    fun isAutomaticCompleted(nowMillis: Long = System.currentTimeMillis()): Boolean {
+        return getAutomaticCompletedDays(nowMillis) >= durationDays
+    }
+
+    fun getRemainingMillisUntilNextAutoDay(nowMillis: Long = System.currentTimeMillis()): Long {
+        if (isAutomaticCompleted(nowMillis)) return 0L
+        val elapsedMillis = (nowMillis - startDateMillis).coerceAtLeast(0L)
+        val remainderMillis = elapsedMillis % EXACT_24_HOURS_MILLIS
+        return (EXACT_24_HOURS_MILLIS - remainderMillis).coerceAtLeast(0L)
+    }
+
+    // ------------------------------------------------------------------------
+    // Unified Single Progress Properties (Depends strictly on trackingMode)
+    // ------------------------------------------------------------------------
+    fun getEffectiveCompletedDays(nowMillis: Long = System.currentTimeMillis()): Int {
+        return when (trackingMode) {
+            TrackingMode.AUTOMATIC -> getAutomaticCompletedDays(nowMillis)
+            TrackingMode.MANUAL -> completedDaysCount
+        }
+    }
+
+    fun getEffectiveRemainingDays(nowMillis: Long = System.currentTimeMillis()): Int {
+        return (durationDays - getEffectiveCompletedDays(nowMillis)).coerceAtLeast(0)
+    }
+
+    fun getEffectiveProgressFraction(nowMillis: Long = System.currentTimeMillis()): Float {
+        return if (durationDays > 0) {
+            (getEffectiveCompletedDays(nowMillis).toFloat() / durationDays.toFloat()).coerceIn(0f, 1f)
+        } else 0f
+    }
+
+    fun getEffectiveProgressPercentage(nowMillis: Long = System.currentTimeMillis()): Int {
+        return (getEffectiveProgressFraction(nowMillis) * 100f).toInt()
+    }
+
+    val remainingDays: Int
+        get() = getEffectiveRemainingDays()
+
+    val progressFraction: Float
+        get() = getEffectiveProgressFraction()
+
     val progressPercentage: Int
-        get() = (progressFraction * 100f).toInt()
+        get() = getEffectiveProgressPercentage()
 
     val expectedCompletionDateMillis: Long
         get() = startDateMillis + (durationDays.toLong() * 24L * 60L * 60L * 1000L)
@@ -59,3 +147,4 @@ data class CheckInRecord(
     val timestampMillis: Long = System.currentTimeMillis(),
     val note: String = ""
 )
+

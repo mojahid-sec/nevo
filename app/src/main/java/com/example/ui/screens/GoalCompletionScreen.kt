@@ -141,7 +141,7 @@ fun GoalCompletionScreen(
         // Completed Circular Progress Ring (100%)
         CircularProgressRing(
             progressFraction = 1f,
-            completedDays = goal?.completedDaysCount ?: goal?.durationDays ?: 30,
+            completedDays = goal?.getEffectiveCompletedDays() ?: goal?.durationDays ?: 30,
             remainingDays = 0,
             totalDays = goal?.durationDays ?: 30,
             size = 210.dp,
@@ -182,8 +182,8 @@ fun GoalCompletionScreen(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 StatRow(
-                    label = NivoStrings.totalCheckInsLabel(language),
-                    value = NivoStrings.daysUnit(language, goal?.completedDaysCount ?: goal?.durationDays ?: 0)
+                    label = if (goal?.trackingMode == com.example.data.model.TrackingMode.AUTOMATIC) NivoStrings.durationLabel(language) else NivoStrings.totalCheckInsLabel(language),
+                    value = NivoStrings.daysUnit(language, goal?.getEffectiveCompletedDays() ?: goal?.durationDays ?: 0)
                 )
                 StatRow(
                     label = NivoStrings.startDateLabel(language),

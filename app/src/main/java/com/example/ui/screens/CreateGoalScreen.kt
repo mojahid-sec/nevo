@@ -28,6 +28,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -95,6 +97,9 @@ fun CreateGoalScreen(
         mutableLongStateOf(goalToEdit?.startDateMillis ?: System.currentTimeMillis())
     }
     var reason by remember(goalToEdit) { mutableStateOf(goalToEdit?.reason ?: "") }
+    var trackingMode by remember(goalToEdit) {
+        mutableStateOf(goalToEdit?.trackingMode ?: com.example.data.model.TrackingMode.MANUAL)
+    }
 
     var titleError by remember { mutableStateOf<String?>(null) }
     var durationError by remember { mutableStateOf<String?>(null) }
@@ -196,7 +201,108 @@ fun CreateGoalScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // 2. Goal Duration (2 to 365 Days)
+        // 2. Tracking Mode (Option A: Manual vs Option B: Automatic)
+        Text(
+            text = NivoStrings.trackingModeLabel(language),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = PrimaryText
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Option A: Manual Tracking Card
+        val isManual = trackingMode == com.example.data.model.TrackingMode.MANUAL
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(if (isManual) PrimaryRed.copy(alpha = 0.08f) else CardBackground)
+                .border(
+                    width = if (isManual) 1.5.dp else 1.dp,
+                    color = if (isManual) PrimaryRed else OutlineGrey,
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .clickable { trackingMode = com.example.data.model.TrackingMode.MANUAL }
+                .padding(14.dp)
+                .testTag("option_manual_tracking")
+        ) {
+            Row(verticalAlignment = Alignment.Top) {
+                Icon(
+                    imageVector = if (isManual) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = if (isManual) PrimaryRed else SecondaryText,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .padding(top = 2.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = NivoStrings.optionAManual(language),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isManual) PrimaryRed else PrimaryText
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = NivoStrings.manualModeDesc(language),
+                        fontSize = 12.sp,
+                        color = SecondaryText,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Option B: Automatic Tracking Card
+        val isAuto = trackingMode == com.example.data.model.TrackingMode.AUTOMATIC
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(if (isAuto) PrimaryRed.copy(alpha = 0.08f) else CardBackground)
+                .border(
+                    width = if (isAuto) 1.5.dp else 1.dp,
+                    color = if (isAuto) PrimaryRed else OutlineGrey,
+                    shape = RoundedCornerShape(14.dp)
+                )
+                .clickable { trackingMode = com.example.data.model.TrackingMode.AUTOMATIC }
+                .padding(14.dp)
+                .testTag("option_automatic_tracking")
+        ) {
+            Row(verticalAlignment = Alignment.Top) {
+                Icon(
+                    imageVector = if (isAuto) Icons.Filled.RadioButtonChecked else Icons.Filled.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = if (isAuto) PrimaryRed else SecondaryText,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .padding(top = 2.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = NivoStrings.optionBAutomatic(language),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isAuto) PrimaryRed else PrimaryText
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = NivoStrings.autoModeDesc(language),
+                        fontSize = 12.sp,
+                        color = SecondaryText,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        // 3. Goal Duration (2 to 365 Days)
         Text(
             text = NivoStrings.goalDurationLabel(language),
             fontSize = 14.sp,
@@ -459,7 +565,8 @@ fun CreateGoalScreen(
                             title = title,
                             durationDays = duration,
                             startDateMillis = startDateMillis,
-                            reason = reason
+                            reason = reason,
+                            trackingMode = trackingMode
                         ) {
                             onNavigateBack()
                         }
@@ -468,7 +575,8 @@ fun CreateGoalScreen(
                             title = title,
                             durationDays = duration,
                             startDateMillis = startDateMillis,
-                            reason = reason
+                            reason = reason,
+                            trackingMode = trackingMode
                         ) {
                             onNavigateBack()
                         }

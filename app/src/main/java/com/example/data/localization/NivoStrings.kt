@@ -32,11 +32,42 @@ object NivoStrings {
     }
 
     // Progress
+    fun manualProgressTitle(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "ম্যানুয়াল অগ্রগতি" else "Manual Progress"
+    fun automaticProgressTitle(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "স্বয়ংক্রিয় অগ্রগতি" else "Automatic Progress"
+    fun manualProgressDesc(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "চেক-ইন বোতামের মাধ্যমে অর্জিত" else "Recorded via manual Check In"
+    fun automaticProgressDesc(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "প্রতি ২৪ ঘণ্টা সময়ের সাথে বৃদ্ধি পায়" else "Advances automatically every 24 hours"
+
+    // Tracking Modes (Option A & Option B)
+    fun trackingModeLabel(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "ট্র্যাকিং মোড" else "Tracking Mode"
+    fun optionAManual(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "অপশন এ: ম্যানুয়াল ট্র্যাকিং" else "Option A: Manual Tracking"
+    fun optionBAutomatic(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "অপশন বি: স্বয়ংক্রিয় ট্র্যাকিং" else "Option B: Automatic Tracking"
+    fun manualModeShort(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "ম্যানুয়াল" else "Manual Tracking"
+    fun autoModeShort(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "স্বয়ংক্রিয়" else "Automatic Tracking"
+    fun manualModeDesc(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "প্রতি ২৪ ঘণ্টায় একবার চেক-ইন বাটন চেপে অগ্রগতি রেকর্ড করতে হবে।" else "Press the Check-in button once every 24 hours to record progress."
+    fun autoModeDesc(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "কোনো বাটন চাপার প্রয়োজন নেই। প্রতি ২৪ ঘণ্টায় স্বয়ংক্রিয়ভাবে অগ্রগতি বাড়বে।" else "Calculates automatically from start time. Advances 1 day every 24 hours without check-in."
+    fun autoModeActiveNotice(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "স্বয়ংক্রিয় মোড সক্রিয় — প্রতি ২৪ ঘণ্টায় অগ্রগতি স্বয়ংক্রিয়ভাবে বৃদ্ধি পায়।" else "Automatic Mode Active — Progress increases every 24 hours without check-in."
+    fun nextAutoDayCountdown(lang: AppLanguage, hours: Long, minutes: Long, seconds: Long): String {
+        return if (lang == AppLanguage.BANGLA) {
+            "পরবর্তী স্বয়ংক্রিয় দিন বাকি: ${hours.toLocalizedDigits(lang)} ঘণ্টা ${minutes.toLocalizedDigits(lang)} মি. ${seconds.toLocalizedDigits(lang)} সে."
+        } else {
+            "Next automatic day in: ${hours}h ${minutes}m ${seconds}s"
+        }
+    }
+    fun optionalManualCheckIn(lang: AppLanguage) = if (lang == AppLanguage.BANGLA) "ঐচ্ছিক ম্যানুয়াল চেক-ইন" else "Optional Manual Check In"
+
     fun ofDays(lang: AppLanguage, completed: Int, total: Int): String {
         return if (lang == AppLanguage.BANGLA) {
             "${total.toLocalizedDigits(lang)} দিনের মধ্যে ${completed.toLocalizedDigits(lang)} দিন সম্পন্ন"
         } else {
             "$completed of $total Days"
+        }
+    }
+
+    fun daysRatio(lang: AppLanguage, completed: Int, total: Int): String {
+        return if (lang == AppLanguage.BANGLA) {
+            "${completed.toLocalizedDigits(lang)}/${total.toLocalizedDigits(lang)} দিন"
+        } else {
+            "$completed/$total days"
         }
     }
 

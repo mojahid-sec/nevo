@@ -66,6 +66,10 @@ class GoalRepository(context: Context) {
                         obj.getLong("completedDateMillis")
                     } else null
 
+                    val trackingMode = com.example.data.model.TrackingMode.fromString(
+                        obj.optString("trackingMode", "MANUAL")
+                    )
+
                     loadedGoals.add(
                         Goal(
                             id = obj.getString("id"),
@@ -77,7 +81,8 @@ class GoalRepository(context: Context) {
                             lastCheckInTimestampMillis = lastTs,
                             isSelected = obj.getBoolean("isSelected"),
                             isCompleted = obj.getBoolean("isCompleted"),
-                            completedDateMillis = completedDate
+                            completedDateMillis = completedDate,
+                            trackingMode = trackingMode
                         )
                     )
                 }
@@ -159,6 +164,7 @@ class GoalRepository(context: Context) {
                 if (goal.completedDateMillis != null) {
                     put("completedDateMillis", goal.completedDateMillis)
                 }
+                put("trackingMode", goal.trackingMode.name)
             }
             array.put(obj)
         }
@@ -231,7 +237,8 @@ class GoalRepository(context: Context) {
         title: String,
         durationDays: Int,
         startDateMillis: Long,
-        reason: String
+        reason: String,
+        trackingMode: com.example.data.model.TrackingMode = com.example.data.model.TrackingMode.MANUAL
     ): Goal {
         val validDuration = durationDays.coerceIn(2, 365)
         val currentGoals = _goals.value
@@ -245,7 +252,8 @@ class GoalRepository(context: Context) {
             completedDaysCount = 0,
             lastCheckInTimestampMillis = null, // Ready for first check-in immediately!
             isSelected = shouldSelect,
-            isCompleted = false
+            isCompleted = false,
+            trackingMode = trackingMode
         )
 
         val updatedGoals = if (shouldSelect) {
@@ -263,25 +271,63 @@ class GoalRepository(context: Context) {
         title: String,
         durationDays: Int,
         startDateMillis: Long,
-        reason: String
+        reason: String,
+        trackingMode: com.example.data.model.TrackingMode = com.example.data.model.TrackingMode.MANUAL
     ): Goal? {
         val validDuration = durationDays.coerceIn(2, 365)
         val currentGoals = _goals.value
         val existing = currentGoals.find { it.id == id } ?: return null
 
-        val isCompletedNow = existing.completedDaysCount >= validDuration
+        val isCompletedNow = when (trackingMode) {
+            com.example.data.model.TrackingMode.AUTOMATIC -> existing.isAutomaticCompleted()
+            com.example.data.model.TrackingMode.MANUAL -> existing.completedDaysCount >= validDuration
+        }
         val updated = existing.copy(
             title = title.trim(),
             durationDays = validDuration,
             startDateMillis = startDateMillis,
             reason = reason.trim(),
             isCompleted = isCompletedNow,
-            completedDateMillis = if (isCompletedNow) (existing.completedDateMillis ?: System.currentTimeMillis()) else null
+            completedDateMillis = if (isCompletedNow) (existing.completedDateMillis ?: System.currentTimeMillis()) else null,
+            trackingMode = trackingMode
         )
 
         val updatedGoals = currentGoals.map { if (it.id == id) updated else it }
         saveGoals(updatedGoals)
         return updated
+    }
+
+    /**
+     * Checks if any automatic tracking goals have elapsed their full target duration.
+     * Automatically completes them and returns newly completed goals.
+     */
+    @Synchronized
+    fun checkAndCompleteAutomaticGoals(nowMillis: Long = System.currentTimeMillis()): List<Goal> {
+        val current = _goals.value
+        var changed = false
+        val newlyCompleted = mutableListOf<Goal>()
+
+        val updatedList = current.map { goal ->
+            if (!goal.isCompleted &&
+                goal.trackingMode == com.example.data.model.TrackingMode.AUTOMATIC &&
+                goal.isAutomaticCompleted(nowMillis)
+            ) {
+                changed = true
+                val completed = goal.copy(
+                    isCompleted = true,
+                    completedDateMillis = nowMillis
+                )
+                newlyCompleted.add(completed)
+                completed
+            } else {
+                goal
+            }
+        }
+
+        if (changed) {
+            saveGoals(updatedList)
+        }
+        return newlyCompleted
     }
 
     fun selectGoal(goalId: String) {
@@ -354,6 +400,7 @@ class GoalRepository(context: Context) {
                 if (goal.completedDateMillis != null) {
                     put("completedDateMillis", goal.completedDateMillis)
                 }
+                put("trackingMode", goal.trackingMode.name)
             }
             goalsArray.put(obj)
         }
@@ -401,6 +448,10 @@ class GoalRepository(context: Context) {
                         obj.getLong("completedDateMillis")
                     } else null
 
+                    val trackingMode = com.example.data.model.TrackingMode.fromString(
+                        obj.optString("trackingMode", "MANUAL")
+                    )
+
                     loaded.add(
                         Goal(
                             id = obj.getString("id"),
@@ -412,7 +463,8 @@ class GoalRepository(context: Context) {
                             lastCheckInTimestampMillis = lastTs,
                             isSelected = obj.getBoolean("isSelected"),
                             isCompleted = obj.getBoolean("isCompleted"),
-                            completedDateMillis = completedDate
+                            completedDateMillis = completedDate,
+                            trackingMode = trackingMode
                         )
                     )
                 }

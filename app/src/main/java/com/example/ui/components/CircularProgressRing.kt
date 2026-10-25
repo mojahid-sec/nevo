@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +35,8 @@ import com.example.ui.theme.PrimaryRed
 import com.example.ui.theme.PrimaryText
 import com.example.ui.theme.SecondaryText
 
+import androidx.compose.ui.graphics.Color
+
 @Composable
 fun CircularProgressRing(
     progressFraction: Float,
@@ -41,8 +44,12 @@ fun CircularProgressRing(
     remainingDays: Int,
     totalDays: Int,
     modifier: Modifier = Modifier,
+    title: String? = null,
     size: Dp = 230.dp,
     strokeWidth: Dp = 16.dp,
+    primaryColor: Color = PrimaryRed,
+    secondaryColor: Color = DarkRed,
+    testTag: String = "circular_progress_ring",
     language: AppLanguage = AppLanguage.ENGLISH
 ) {
     val animatedProgress by animateFloatAsState(
@@ -52,14 +59,13 @@ fun CircularProgressRing(
     )
 
     val progressPercent = (animatedProgress * 100).toInt()
-    val trackColor = OutlineGrey.copy(alpha = 0.5f)
-    val darkRedColor = DarkRed
-    val primaryRedColor = PrimaryRed
+    val trackColor = OutlineGrey.copy(alpha = 0.35f)
+    val isCompact = size < 180.dp
 
     Box(
         modifier = modifier
             .size(size)
-            .testTag("circular_progress_ring"),
+            .testTag(testTag),
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.size(size)) {
@@ -78,11 +84,11 @@ fun CircularProgressRing(
                 style = Stroke(width = strokePx, cap = StrokeCap.Round)
             )
 
-            // Animated Foreground Arc with Theme Gradient
+            // Animated Foreground Arc with Gradient
             if (animatedProgress > 0.005f) {
                 drawArc(
                     brush = Brush.sweepGradient(
-                        colors = listOf(darkRedColor, primaryRedColor, darkRedColor)
+                        colors = listOf(secondaryColor, primaryColor, secondaryColor)
                     ),
                     startAngle = -90f,
                     sweepAngle = 360f * animatedProgress,
@@ -96,31 +102,48 @@ fun CircularProgressRing(
 
         // Inside Content: Percentage and Days Breakdown (Localized)
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 6.dp)
         ) {
+            if (title != null && isCompact) {
+                Text(
+                    text = title,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = primaryColor,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+            }
+
             Text(
                 text = "${progressPercent.toLocalizedDigits(language)}%",
-                fontSize = 42.sp,
+                fontSize = if (isCompact) 26.sp else 42.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = PrimaryText,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(if (isCompact) 2.dp else 4.dp))
 
             Text(
-                text = NivoStrings.ofDays(language, completedDays, totalDays),
-                fontSize = 13.sp,
+                text = if (isCompact) {
+                    NivoStrings.daysRatio(language, completedDays, totalDays)
+                } else {
+                    NivoStrings.ofDays(language, completedDays, totalDays)
+                },
+                fontSize = if (isCompact) 11.sp else 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = PrimaryRed,
+                color = primaryColor,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(if (isCompact) 1.dp else 2.dp))
 
             Text(
                 text = NivoStrings.daysRemaining(language, remainingDays),
-                fontSize = 12.sp,
+                fontSize = if (isCompact) 10.sp else 12.sp,
                 fontWeight = FontWeight.Normal,
                 color = SecondaryText,
                 textAlign = TextAlign.Center

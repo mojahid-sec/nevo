@@ -252,21 +252,42 @@ private fun GoalCard(
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
-                        Text(
-                            text = goal.title,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryText,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (isSelected) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = NivoStrings.activeOnHome(language),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = PrimaryRed
+                                text = goal.title,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
+                        }
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Tracking Mode Badge
+                            val isAuto = goal.trackingMode == com.example.data.model.TrackingMode.AUTOMATIC
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(if (isAuto) PrimaryRed.copy(alpha = 0.15f) else OutlineGrey.copy(alpha = 0.2f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = if (isAuto) NivoStrings.autoModeShort(language) else NivoStrings.manualModeShort(language),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (isAuto) PrimaryRed else PrimaryText
+                                )
+                            }
+                            if (isSelected) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "• ${NivoStrings.activeOnHome(language)}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = PrimaryRed
+                                )
+                            }
                         }
                     }
                 }
@@ -312,9 +333,14 @@ private fun GoalCard(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // Progress bar
+            // Single Progress Overview (Mode-aware)
+            val effectiveCompleted = goal.getEffectiveCompletedDays()
+            val effectiveRemaining = goal.getEffectiveRemainingDays()
+            val effectiveProgressFraction = goal.getEffectiveProgressFraction()
+
+            // Single Progress Bar
             LinearProgressIndicator(
-                progress = { goal.progressFraction },
+                progress = { effectiveProgressFraction },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
@@ -325,7 +351,7 @@ private fun GoalCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Metrics Row: Duration, Completed, Remaining, Progress %, Expected completion
+            // Single Metrics Row: Duration, Completed, Remaining, Target Date
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -336,15 +362,11 @@ private fun GoalCard(
                 )
                 GoalMetricItem(
                     label = NivoStrings.completedLabel(language),
-                    value = NivoStrings.daysUnit(language, goal.completedDaysCount)
+                    value = "${effectiveCompleted.toLocalizedDigits(language)}/${goal.durationDays.toLocalizedDigits(language)}"
                 )
                 GoalMetricItem(
                     label = NivoStrings.remainingLabel(language),
-                    value = NivoStrings.daysUnit(language, goal.remainingDays)
-                )
-                GoalMetricItem(
-                    label = NivoStrings.progressLabel(language),
-                    value = "${goal.progressPercentage.toLocalizedDigits(language)}%"
+                    value = "${effectiveRemaining.toLocalizedDigits(language)} ${if (language == AppLanguage.BANGLA) "দিন" else "d"}"
                 )
                 GoalMetricItem(
                     label = NivoStrings.expectedCompletionLabel(language),

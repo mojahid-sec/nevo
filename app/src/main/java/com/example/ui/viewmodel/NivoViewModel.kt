@@ -47,10 +47,15 @@ class NivoViewModel(application: Application) : AndroidViewModel(application) {
     val goalCompletedEvent = MutableStateFlow<Goal?>(null)
 
     init {
-        // High-precision 1-second ticker for exact 24-hour timer countdown
+        // High-precision 1-second ticker for exact 24-hour timer countdown and automatic completions
         viewModelScope.launch {
             while (true) {
-                _currentTimeMillis.value = System.currentTimeMillis()
+                val now = System.currentTimeMillis()
+                _currentTimeMillis.value = now
+                val autoCompleted = repository.checkAndCompleteAutomaticGoals(now)
+                autoCompleted.firstOrNull()?.let { goal ->
+                    goalCompletedEvent.value = goal
+                }
                 delay(1000L)
             }
         }
@@ -65,11 +70,24 @@ class NivoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Returns remaining countdown in hours, minutes, seconds for the given goal.
+     * Returns remaining countdown in hours, minutes, seconds for manual check-in.
      */
     fun getCountdownForGoal(goal: Goal?): Triple<Long, Long, Long> {
         if (goal == null) return Triple(0L, 0L, 0L)
         val remainingMillis = goal.getRemainingCooldownMillis(_currentTimeMillis.value)
+        val totalSeconds = remainingMillis / 1000L
+        val hours = totalSeconds / 3600L
+        val minutes = (totalSeconds % 3600L) / 60L
+        val seconds = totalSeconds % 60L
+        return Triple(hours, minutes, seconds)
+    }
+
+    /**
+     * Returns remaining countdown in hours, minutes, seconds until next automatic 24h day completes.
+     */
+    fun getAutomaticCountdownForGoal(goal: Goal?): Triple<Long, Long, Long> {
+        if (goal == null) return Triple(0L, 0L, 0L)
+        val remainingMillis = goal.getRemainingMillisUntilNextAutoDay(_currentTimeMillis.value)
         val totalSeconds = remainingMillis / 1000L
         val hours = totalSeconds / 3600L
         val minutes = (totalSeconds % 3600L) / 60L
@@ -102,6 +120,7 @@ class NivoViewModel(application: Application) : AndroidViewModel(application) {
         durationDays: Int,
         startDateMillis: Long,
         reason: String,
+        trackingMode: com.example.data.model.TrackingMode = com.example.data.model.TrackingMode.MANUAL,
         onSuccess: (Goal) -> Unit
     ) {
         viewModelScope.launch {
@@ -109,7 +128,8 @@ class NivoViewModel(application: Application) : AndroidViewModel(application) {
                 title = title,
                 durationDays = durationDays,
                 startDateMillis = startDateMillis,
-                reason = reason
+                reason = reason,
+                trackingMode = trackingMode
             )
             onSuccess(newGoal)
         }
@@ -121,6 +141,7 @@ class NivoViewModel(application: Application) : AndroidViewModel(application) {
         durationDays: Int,
         startDateMillis: Long,
         reason: String,
+        trackingMode: com.example.data.model.TrackingMode = com.example.data.model.TrackingMode.MANUAL,
         onSuccess: (Goal) -> Unit
     ) {
         viewModelScope.launch {
@@ -129,7 +150,8 @@ class NivoViewModel(application: Application) : AndroidViewModel(application) {
                 title = title,
                 durationDays = durationDays,
                 startDateMillis = startDateMillis,
-                reason = reason
+                reason = reason,
+                trackingMode = trackingMode
             )
             if (updated != null) {
                 onSuccess(updated)
